@@ -1,8 +1,8 @@
 --[[
-    Auto Wall Hop Script (Clean Version)
-    - Rounded black button (Draggable)
-    - Auto jump and 360 flick at wall gaps
-    - Normal jump power maintained
+    Auto Wall Hop Script (Video Recreation Version)
+    - 動画のような「一瞬のフリック」を完全自動で再現
+    - 壁の継ぎ目に触れた瞬間に自動ジャンプ＋超高速360度フリック
+    - 角丸・黒色ボタン（ドラッグ可能）
 ]]
 
 local Players = game:GetService("Players")
@@ -10,7 +10,7 @@ local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
--- --- UI SETUP ---
+-- --- UIの作成 ---
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "AutoWallHopGui"
@@ -32,30 +32,40 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 12)
 UICorner.Parent = TextButton
 
--- --- LOGIC ---
+-- --- ロジック ---
 local isWallHopEnabled = false
 local isFlicking = false
 local lastFlickTime = 0
 local Camera = workspace.CurrentCamera
 
-local function performNormalJumpFlick()
+-- 動画のような「一瞬」のフリックを実行
+local function performVideoFlick()
     if isFlicking then return end
     isFlicking = true
     
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
-    if not hum then isFlicking = false return end
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hum or not hrp then isFlicking = false return end
 
-    hum.Jump = true
+    -- 1. ジャンプ実行
+    hum:ChangeState(Enum.HumanoidStateType.Jumping)
     
+    -- 2. 物理的な勢いを補助（動画のようなスムーズな上昇のため）
+    hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
+
+    -- 3. 超高速360度フリック（0.01秒 = ほぼ1フレーム）
     local startCFrame = Camera.CFrame
-    Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(180), 0)
-    task.wait(0.01)
-    Camera.CFrame = startCFrame
+    Camera.CFrame = startCFrame * CFrame.Angles(0, math.rad(180), 0) -- 一瞬真後ろを向く
+    
+    task.wait(0.01) -- 最小の待ち時間
+    
+    Camera.CFrame = startCFrame -- 即座に元の向きに戻る（これで360度フリック完了）
     
     isFlicking = false
 end
 
+-- 壁の継ぎ目を検知
 local lastHitInstance = nil
 RunService.Heartbeat:Connect(function()
     if not isWallHopEnabled then return end
@@ -68,13 +78,15 @@ RunService.Heartbeat:Connect(function()
     raycastParams.FilterDescendantsInstances = {char}
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
-    local result = workspace:Raycast(hrp.Position, Camera.CFrame.LookVector * 2.5, raycastParams)
+    -- 正面の壁を検知
+    local result = workspace:Raycast(hrp.Position, Camera.CFrame.LookVector * 3, raycastParams)
 
     if result and result.Instance.CanCollide then
+        -- パーツが切り替わった瞬間（継ぎ目）
         if lastHitInstance and lastHitInstance ~= result.Instance then
-            if tick() - lastFlickTime > 0.1 then
+            if tick() - lastFlickTime > 0.05 then
                 lastFlickTime = tick()
-                performNormalJumpFlick()
+                performVideoFlick()
             end
         end
         lastHitInstance = result.Instance
@@ -83,13 +95,14 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
+-- ボタン切り替え
 TextButton.MouseButton1Click:Connect(function()
     isWallHopEnabled = not isWallHopEnabled
     TextButton.Text = isWallHopEnabled and "Wall Hop On" or "Wall Hop Off"
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
--- --- DRAG FUNCTION ---
+-- --- ドラッグ機能 ---
 local dragging, dragStart, startPos
 TextButton.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -110,4 +123,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("Auto Wall Hop Loaded")
+print("Video Style Auto Wall Hop Loaded!")
