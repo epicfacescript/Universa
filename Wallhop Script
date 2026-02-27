@@ -1,8 +1,16 @@
+--[[
+    Auto Wall Hop Script (Clean Version)
+    - Rounded black button (Draggable)
+    - Auto jump and 360 flick at wall gaps
+    - Normal jump power maintained
+]]
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
+-- --- UI SETUP ---
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "AutoWallHopGui"
@@ -24,6 +32,7 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 12)
 UICorner.Parent = TextButton
 
+-- --- LOGIC ---
 local isWallHopEnabled = false
 local isFlicking = false
 local lastFlickTime = 0
@@ -80,6 +89,7 @@ TextButton.MouseButton1Click:Connect(function()
     TextButton.BackgroundColor3 = isWallHopEnabled and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 0, 0)
 end)
 
+-- --- DRAG FUNCTION ---
 local dragging, dragStart, startPos
 TextButton.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -99,3 +109,5 @@ UserInputService.InputEnded:Connect(function(input)
         dragging = false
     end
 end)
+
+print("Auto Wall Hop Loaded")
